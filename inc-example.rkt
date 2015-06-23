@@ -189,12 +189,8 @@
                 )))
     
     ; Construct formula for whether the outputs changed.
-    ;(define output-changed
-    ;  (|| (changed-w rel-x) (changed-w inner-width) (changed-h rel-y) (changed-h inner-height)))
-    
     (define output-changed
-      (changed-w rel-x))
-    
+      (|| (changed-w rel-x) (changed-w inner-width) (changed-h rel-y) (changed-h inner-height)))
     
     (define (is-sat? expr)
       (with-handlers ([exn:fail? (lambda (exn) (begin (displayln exn) #f))]) 
