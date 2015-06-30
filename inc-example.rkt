@@ -1,6 +1,7 @@
 #lang s-exp rosette
 
 (require rosette/lib/meta/meta)
+(define base-ns (make-base-namespace))
 
 (define (rel-x width
                width-auto
@@ -283,7 +284,6 @@
             (&& (car lst)
                 (soundness-constraint (cdr lst) (car precise))))))
   (define sound (soundness-constraint auto-lst precise))
-  sound
   
   (define (precision precise approximate)
     (define count 0)
@@ -305,25 +305,58 @@
     (do-count '() precise)
     count)
   
-  (define-synthax (auto-expr k autos)
-    #:assert (> k 0)
-    [choose
-     #t
-     #f
-     (car autos) 
-     (cadr autos) 
-     (caddr autos) 
-     (cadddr autos) 
-     (car (cddddr autos)) 
-     (cadr (cddddr autos)) 
-     (caddr (cddddr autos)) 
-     (cadddr (cddddr autos)) 
-     (car (cddddr (cddddr autos))) 
-     (cadr (cddddr (cddddr autos)))
-     ([choose && ||] (auto-expr (- k 1) autos) (auto-expr (- k 1) autos))
-     ])
+;  (define-synthax (auto-expr k autos)
+;    #:assert (> k 0)
+;    [choose
+;     #t
+;     #f
+;     (car autos) 
+;     (cadr autos) 
+;     (caddr autos) 
+;     (cadddr autos) 
+;     (car (cddddr autos)) 
+;     (cadr (cddddr autos)) 
+;     (caddr (cddddr autos)) 
+;     (cadddr (cddddr autos)) 
+;     (car (cddddr (cddddr autos))) 
+;     (cadr (cddddr (cddddr autos)))
+;     (not (auto-expr (- k 1) autos))
+;     ([choose && ||] (auto-expr (- k 1) autos) (auto-expr (- k 1) autos) (auto-expr (- k 1) autos) (auto-expr (- k 1) autos))
+;     ])
   
-  (define (f db1 db2 db3 autos) (|| (&& (auto-expr 2 autos) db1) (&& (auto-expr 2 autos) db2) (&& (auto-expr 2 autos) db3)))
+  
+  (define-synthax (one-of autos)
+    [choose #t #f
+             (car autos) 
+             (not (car autos)) 
+             (cadr autos) 
+             (not (cadr autos)) 
+             (caddr autos) (not (caddr autos))
+             (cadddr autos) (not (cadddr autos))
+             (car (cddddr autos)) (not (car (cddddr autos)))
+             (cadr (cddddr autos)) (not (cadr (cddddr autos)))
+             (caddr (cddddr autos)) (not (caddr (cddddr autos)))
+             (cadddr (cddddr autos)) (not (cadddr (cddddr autos)))
+             (car (cddddr (cddddr autos))) (not (car (cddddr (cddddr autos))))
+             (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))])
+  
+  (define-synthax (subset autos)
+    (and
+     [choose #t (car autos) (not (car autos))]
+     [choose #t (cadr autos) (not (cadr autos))]
+     [choose #t (caddr autos) (not (caddr autos))]
+     [choose #t (cadddr autos) (not (cadddr autos))]
+     [choose #t (car (cddddr autos)) (not (car (cddddr autos)))]
+     [choose #t (cadr (cddddr autos)) (not (cadr (cddddr autos)))]
+     [choose #t (caddr (cddddr autos)) (not (caddr (cddddr autos)))]
+     [choose #t (cadddr (cddddr autos)) (not (cadddr (cddddr autos)))]
+     [choose #t (car (cddddr (cddddr autos))) (not (car (cddddr (cddddr autos))))]
+     [choose #t (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))]))
+    
+  (define-synthax (auto-expr autos)
+    (or (subset autos) (subset autos) (subset autos) (subset autos) (subset autos)))
+  
+  (define-synthax (f db1 db2 db3 autos) (or (and (auto-expr autos) db1) (and (auto-expr autos) db2) (and (auto-expr autos) db3)))
   
   (define (synth f-old bounds)
     (displayln "synthesizing...")
@@ -345,19 +378,52 @@
 
     (define auto-lst-w (list width-auto-w ml-auto-w mr-auto-w left-auto-w right-auto-w height-auto-w mt-auto-w mb-auto-w top-auto-w bottom-auto-w))
 
+    (define f-new-expr (tag [result] (f container-d inner-d intrins-d auto-lst)))
     (define m (synthesize 
                    #:forall (append auto-lst (list container-d inner-d intrins-d))
-                   #:guarantee (assert (&& (implies sound (f container-d inner-d intrins-d auto-lst))
+                   #:guarantee (assert (&& (implies sound f-new-expr)
                                            (f-old container-d-w inner-d-w intrins-d-w auto-lst-w)
                                            (not (f container-d-w inner-d-w intrins-d-w auto-lst-w))
-                                           bounds))))
+                                           bounds
+                                           ))))
     (display "found expression: ")
-    (displayln (evaluate (f container-d inner-d intrins-d auto-lst) m))
-    (define f-new (lambda (db1 db2 db3 lst) (evaluate (f db1 db2 db3 lst) m)))
+    (displayln (evaluate f-new-expr m))
+    (define (f-new db1 db2 db3 lst)
+      (define f-s-exp `(lambda (container-d
+                                inner-d 
+                                intrins-d
+                                width-auto
+                                ml-auto
+                                mr-auto
+                                left-auto
+                                right-auto
+                                height-auto
+                                mt-auto
+                                mb-auto
+                                top-auto
+                                bottom-auto)
+                         ,(syntax->datum (cdr (car (generate-expressions m #:filter (lambda (id) (equal? (syntax->datum id) 'result))))))))
+      ;(displayln f-s-exp)
+      (define eval-f-expr 
+        (eval f-s-exp base-ns))
+      ;(displayln eval-f-expr)
+      ;(displayln (length lst))
+      (eval-f-expr db1 db2 db3
+                   (car lst)
+                   (cadr lst)
+                   (caddr lst)
+                   (cadddr lst)
+                   (cadddr (cdr lst))
+                   (cadddr (cddr lst))
+                   (cadddr (cdddr lst))
+                   (cadddr (cddddr lst))
+                   (cadddr (cddddr (cdr lst)))
+                   (cadddr (cddddr (cddr lst)))))
+                   
     
-    (display  "computing precision... ")
-    (print (precision precise f-new))
-    (newline)
+    ;(display  "computing precision... ")
+    ;(print (precision precise f-new))
+    ;(newline)
 
     (define concrete-witness
       `(,(evaluate container-d-w m)
@@ -384,6 +450,7 @@
   (synth (lambda (db1 db2 db3 lst) #t) #t)
   )
 
+(displayln "Starting execution...")
 ; Compute the most accurate dirty-bit function
 (define precise-db (get-precise-db '()))
 
