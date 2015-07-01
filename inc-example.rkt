@@ -354,9 +354,9 @@
      [choose #t (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))]))
     
   (define-synthax (auto-expr autos)
-    (or (subset autos) (subset autos) (subset autos) (subset autos) (subset autos)))
+    (or (subset autos) (subset autos) (subset autos) (subset autos) (subset autos) (subset autos) (subset autos)))
   
-  (define-synthax (f db1 db2 db3 autos) (or (and (auto-expr autos) db1) (and (auto-expr autos) db2) (and (auto-expr autos) db3)))
+  (define (f db1 db2 db3 autos) (or (and (auto-expr autos) db1) (and (auto-expr autos) db2) (and (auto-expr autos) db3)))
   
   (define (synth f-old bounds)
     (displayln "synthesizing...")
@@ -378,52 +378,24 @@
 
     (define auto-lst-w (list width-auto-w ml-auto-w mr-auto-w left-auto-w right-auto-w height-auto-w mt-auto-w mb-auto-w top-auto-w bottom-auto-w))
 
-    (define f-new-expr (tag [result] (f container-d inner-d intrins-d auto-lst)))
+    ;(define f-new-expr (tag [result] (f container-d inner-d intrins-d auto-lst)))
     (define m (synthesize 
                    #:forall (append auto-lst (list container-d inner-d intrins-d))
-                   #:guarantee (assert (&& (implies sound f-new-expr)
+                   #:guarantee (assert (&& (implies sound (f container-d inner-d intrins-d auto-lst))
                                            (f-old container-d-w inner-d-w intrins-d-w auto-lst-w)
                                            (not (f container-d-w inner-d-w intrins-d-w auto-lst-w))
                                            bounds
                                            ))))
     (display "found expression: ")
-    (displayln (evaluate f-new-expr m))
+    (print (evaluate (f container-d inner-d intrins-d auto-lst) m))
+    (newline)
     (define (f-new db1 db2 db3 lst)
-      (define f-s-exp `(lambda (container-d
-                                inner-d 
-                                intrins-d
-                                width-auto
-                                ml-auto
-                                mr-auto
-                                left-auto
-                                right-auto
-                                height-auto
-                                mt-auto
-                                mb-auto
-                                top-auto
-                                bottom-auto)
-                         ,(syntax->datum (cdr (car (generate-expressions m #:filter (lambda (id) (equal? (syntax->datum id) 'result))))))))
-      ;(displayln f-s-exp)
-      (define eval-f-expr 
-        (eval f-s-exp base-ns))
-      ;(displayln eval-f-expr)
-      ;(displayln (length lst))
-      (eval-f-expr db1 db2 db3
-                   (car lst)
-                   (cadr lst)
-                   (caddr lst)
-                   (cadddr lst)
-                   (cadddr (cdr lst))
-                   (cadddr (cddr lst))
-                   (cadddr (cdddr lst))
-                   (cadddr (cddddr lst))
-                   (cadddr (cddddr (cdr lst)))
-                   (cadddr (cddddr (cddr lst)))))
+      (evaluate (f db1 db2 db3 lst) m))
                    
     
-    ;(display  "computing precision... ")
-    ;(print (precision precise f-new))
-    ;(newline)
+    (display  "computing precision... ")
+    (print (precision precise f-new))
+    (newline)
 
     (define concrete-witness
       `(,(evaluate container-d-w m)
@@ -440,7 +412,12 @@
          ,(evaluate top-auto-w m)
          ,(evaluate bottom-auto-w m))))
 
-    (with-handlers ([exn:fail? (lambda (exn) (begin (displayln exn) f-new))])
+    (with-handlers ([exn:fail? (lambda (exn) (begin 
+                                               (displayln exn)
+                                               (display  "computing precision... ")
+                                               (print (precision precise f-new))
+                                               (newline)
+                                               f-new))])
       (synth f-new (&& bounds (not (f (car concrete-witness) 
                                       (cadr concrete-witness)
                                       (caddr concrete-witness)
