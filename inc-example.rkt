@@ -2,6 +2,7 @@
 
 (require rosette/lib/meta/meta)
 (define base-ns (make-base-namespace))
+(require "dnf-expression.rkt")
 
 (define (rel-x width
                width-auto
@@ -325,38 +326,45 @@
 ;     ])
   
   
-  (define-synthax (one-of autos)
-    [choose #t #f
-             (car autos) 
-             (not (car autos)) 
-             (cadr autos) 
-             (not (cadr autos)) 
-             (caddr autos) (not (caddr autos))
-             (cadddr autos) (not (cadddr autos))
-             (car (cddddr autos)) (not (car (cddddr autos)))
-             (cadr (cddddr autos)) (not (cadr (cddddr autos)))
-             (caddr (cddddr autos)) (not (caddr (cddddr autos)))
-             (cadddr (cddddr autos)) (not (cadddr (cddddr autos)))
-             (car (cddddr (cddddr autos))) (not (car (cddddr (cddddr autos))))
-             (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))])
-  
-  (define-synthax (subset autos)
-    (and
-     [choose #t (car autos) (not (car autos))]
-     [choose #t (cadr autos) (not (cadr autos))]
-     [choose #t (caddr autos) (not (caddr autos))]
-     [choose #t (cadddr autos) (not (cadddr autos))]
-     [choose #t (car (cddddr autos)) (not (car (cddddr autos)))]
-     [choose #t (cadr (cddddr autos)) (not (cadr (cddddr autos)))]
-     [choose #t (caddr (cddddr autos)) (not (caddr (cddddr autos)))]
-     [choose #t (cadddr (cddddr autos)) (not (cadddr (cddddr autos)))]
-     [choose #t (car (cddddr (cddddr autos))) (not (car (cddddr (cddddr autos))))]
-     [choose #t (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))]))
+;  (define-synthax (one-of autos)
+;    [choose #t #f
+;             (car autos) 
+;             (not (car autos)) 
+;             (cadr autos) 
+;             (not (cadr autos)) 
+;             (caddr autos) (not (caddr autos))
+;             (cadddr autos) (not (cadddr autos))
+;             (car (cddddr autos)) (not (car (cddddr autos)))
+;             (cadr (cddddr autos)) (not (cadr (cddddr autos)))
+;             (caddr (cddddr autos)) (not (caddr (cddddr autos)))
+;             (cadddr (cddddr autos)) (not (cadddr (cddddr autos)))
+;             (car (cddddr (cddddr autos))) (not (car (cddddr (cddddr autos))))
+;             (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))])
+;  
+;  (define-synthax (subset autos)
+;    (and
+;     [choose #t (car autos) (not (car autos))]
+;     [choose #t (cadr autos) (not (cadr autos))]
+;     [choose #t (caddr autos) (not (caddr autos))]
+;     [choose #t (cadddr autos) (not (cadddr autos))]
+;     [choose #t (car (cddddr autos)) (not (car (cddddr autos)))]
+;     [choose #t (cadr (cddddr autos)) (not (cadr (cddddr autos)))]
+;     [choose #t (caddr (cddddr autos)) (not (caddr (cddddr autos)))]
+;     [choose #t (cadddr (cddddr autos)) (not (cadddr (cddddr autos)))]
+;     [choose #t (car (cddddr (cddddr autos))) (not (car (cddddr (cddddr autos))))]
+;     [choose #t (cadr (cddddr (cddddr autos))) (not (cadr (cddddr (cddddr autos))))]))
     
-  (define-synthax (auto-expr autos)
-    (or (subset autos) (subset autos) (subset autos) (subset autos) (subset autos) (subset autos) (subset autos)))
+;  (define-synthax (auto-expr autos)
+;    (or (subset autos) (subset autos) (subset autos) (subset autos) (subset autos) (subset autos) (subset autos)))
   
-  (define (f db1 db2 db3 autos) (or (and (auto-expr autos) db1) (and (auto-expr autos) db2) (and (auto-expr autos) db3)))
+  (define db1-expr (dnf-expression auto-lst 8))
+  (define db2-expr (dnf-expression auto-lst 8))
+  (define db3-expr (dnf-expression auto-lst 8))
+  
+  (define (f db1 db2 db3 autos) (or (and (dnf-formula (replace-dnf-variables db1-expr autos)) db1) 
+                                    (and (dnf-formula (replace-dnf-variables db2-expr autos)) db2) 
+                                    (and (dnf-formula (replace-dnf-variables db3-expr autos)) db3)))
+  (define limit-variables-formula (limit-num-variables (merge-dnf db1-expr (merge-dnf db2-expr db3-expr)) 9))
   
   (define (synth f-old bounds)
     (displayln "synthesizing...")
@@ -385,9 +393,15 @@
                                            (f-old container-d-w inner-d-w intrins-d-w auto-lst-w)
                                            (not (f container-d-w inner-d-w intrins-d-w auto-lst-w))
                                            bounds
+                                           limit-variables-formula
                                            ))))
-    (display "found expression: ")
-    (print (evaluate (f container-d inner-d intrins-d auto-lst) m))
+    (displayln "found expression: ")
+    (display "container-d: ")
+    (displayln (dnf-s-expr db1-expr m))
+    (display "inner-d: ")
+    (displayln (dnf-s-expr db2-expr m))
+    (display "intrins-d: ")
+    (displayln (dnf-s-expr db3-expr m))
     (newline)
     (define (f-new db1 db2 db3 lst)
       (evaluate (f db1 db2 db3 lst) m))
