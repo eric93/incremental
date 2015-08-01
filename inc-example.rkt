@@ -4,6 +4,8 @@
 (define base-ns (make-base-namespace))
 (require "dnf-expression.rkt")
 
+(current-bitwidth 8)
+
 (define (rel-x width
                width-auto
                ml
@@ -364,7 +366,7 @@
   (define (f db1 db2 db3 autos) (or (and (dnf-formula (replace-dnf-variables db1-expr autos)) db1) 
                                     (and (dnf-formula (replace-dnf-variables db2-expr autos)) db2) 
                                     (and (dnf-formula (replace-dnf-variables db3-expr autos)) db3)))
-  (define limit-variables-formula (limit-num-variables (merge-dnf db1-expr (merge-dnf db2-expr db3-expr)) 9))
+  ;(define limit-variables-formula (limit-num-variables (merge-dnf db1-expr (merge-dnf db2-expr db3-expr)) 9))
   
   (define (synth f-old bounds)
     (displayln "synthesizing...")
@@ -390,10 +392,13 @@
     (define m (synthesize 
                    #:forall (append auto-lst (list container-d inner-d intrins-d))
                    #:guarantee (assert (&& (implies sound (f container-d inner-d intrins-d auto-lst))
+                                           (<= (total-variables db1-expr) 11)
+                                           (<= (total-variables db2-expr) 8)
+                                           (<= (total-variables db3-expr) 8)
                                            (f-old container-d-w inner-d-w intrins-d-w auto-lst-w)
                                            (not (f container-d-w inner-d-w intrins-d-w auto-lst-w))
                                            bounds
-                                           limit-variables-formula
+                                           ;limit-variables-formula
                                            ))))
     (displayln "found expression: ")
     (display "container-d: ")
@@ -405,11 +410,39 @@
     (newline)
     (define (f-new db1 db2 db3 lst)
       (evaluate (f db1 db2 db3 lst) m))
+    
+    (displayln "complexity: ")
+    (displayln (evaluate (+ (total-variables db1-expr)
+                            (total-variables db2-expr)
+                            (total-variables db3-expr))
+                         m))
                    
     
     (display  "computing precision... ")
     (print (precision precise f-new))
     (newline)
+    
+    (displayln "simplifying...")
+    (define simple1 (simplify db1-expr m))
+    (define simple2 (simplify db2-expr m))
+    (define simple3 (simplify db3-expr m))
+   
+    (define complexity (+ (evaluate (total-variables db1-expr) simple1)
+                          (evaluate (total-variables db2-expr) simple2)
+                          (evaluate (total-variables db3-expr) simple3)))
+    
+    (display "minimum-complexity: ")
+    (displayln complexity)
+    (display "container-d: ")
+    (displayln (dnf-s-expr db1-expr simple1))
+    (display "inner-d: ")
+    (displayln (dnf-s-expr db2-expr simple2))
+    (display "intrins-d: ")
+    (displayln (dnf-s-expr db3-expr simple3))
+    
+    
+    
+                                          
 
     (define concrete-witness
       `(,(evaluate container-d-w m)
@@ -445,6 +478,39 @@
 ; Compute the most accurate dirty-bit function
 (define precise-db (get-precise-db '()))
 
-(define m (synthesize-expression precise-db))
+;(define m (synthesize-expression precise-db))
+
+(define (num-true len precise)
+  (if (= len 0)
+      (apply + (map (lambda (x) (if x 0 1)) precise))
+      (+ (num-true (- len 1) (car precise)) (num-true (- len 1) (cadr precise)))))
+(num-true 10 precise-db)
+(print precise-db)
+
+(define other-precise '(((((((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))))) ((((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))))) (((((((((#f #f #t) (#f #f #t)) ((#f #f #t) (#f #f #t))) (((#f #f #t) (#f #t #t)) ((#f #f #t) (#f #t #t)))) ((((#f #t #t) (#f #f #t)) ((#f #t #t) (#f #t #t))) (((#f #t #t) (#f #t #t)) ((#f #t #t) (#f #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))))) ((((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))))))) ((((((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))))) ((((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))))) (((((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))))) ((((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))) (((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t)))))) ((((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))) (((((#t #f #t) (#t #f #t)) ((#t #f #t) (#t #f #t))) (((#t #f #t) (#t #t #t)) ((#t #f #t) (#t #t #t)))) ((((#t #t #t) (#t #f #t)) ((#t #t #t) (#t #t #t))) (((#t #t #t) (#t #t #t)) ((#t #t #t) (#t #t #t))))))))))))
+
+
+(define (precise-diff precise1 precise2)
+  (define count 0)
+  (define (diff len p1 p2 seq)
+    (if (= len 0) 
+        (if (not (&& (eq? (car p1) (car p2)) (eq? (cadr p1) (cadr p2)) (eq? (caddr p1) (caddr p2))))
+            (begin
+              (set! count (+ count 1))
+              (display seq)
+              (display ":")
+              (display p1)
+              (display "-")
+              (displayln p2))
+            '())
+        (begin
+          (diff (- len 1) (car p1) (car p2) (append seq '(#t)))
+          (diff (- len 1) (cadr p1) (cadr p2) (append seq '(#f))))))
+  (diff 10 precise1 precise2 '())
+  count)
+
+(precise-diff precise-db other-precise)
+    
+        
 
 ;(solve-db-constraints '(#f #f #f #f #f #f #f #f #f #f))
