@@ -18,12 +18,8 @@
       (define-symbolic* input-old number?)
       (define-symbolic* input-new number?)
       (cons input-old input-new))
-    (define (gen-bit-pair)
-      (define-symbolic* change-bit boolean?)
-      (define-symbolic* change-bit-witness boolean?)
-      (cons change-bit change-bit-witness))
     (begin
-      (define input-bit (gen-bit-pair))
+      (define-symbolic input-bit boolean?)
       (begin (define input (gen-sym-pair))
              ...
              ))
@@ -43,11 +39,7 @@
 
 (define-syntax-rule (define-conditions (cond ...))
   (begin
-    (define (gen-sym-pair)
-      (define-symbolic* condition boolean?)
-      (define-symbolic* cond-witness boolean?)
-      (cons condition cond-witness))
-    (define cond (gen-sym-pair))
+    (define-symbolic cond boolean?)
     ...
     (set-conditions! (list cond ...))))
 
@@ -142,8 +134,8 @@
             (&& (car lst)
                 (soundness-constraint (cdr lst) (car precise) inputs)))))
   
-  (define cond-lst (map car conditions))
-  (define input-lst (map (lambda (x) (car (car x))) inputs))
+  (define cond-lst conditions)
+  (define input-lst (map car inputs))
   (define sound (soundness-constraint cond-lst precise input-lst))
   
   ; approximate must be a list of functions taking as input
@@ -181,6 +173,16 @@
       new-var)
     (cons (map generate-variable inputs) (map generate-variable conditions)))
   
+  (define initial-m (synthesize
+                     #:forall (append cond-lst input-lst)
+                     #:guarantee (assert (&& (<=> sound (f input-lst cond-lst))))))
+  
+  
+  (define initial-complexity (map (lambda (x) (evaluate (total-variables x) (simplify x initial-m))) dnf-exprs))
+  
+  (display "Maximum complexity: ")
+  (displayln (apply + initial-complexity))
+  
   (define (synth f-old bounds)
     (define witness (gen-witness))
     (define input-w (car witness))
@@ -192,6 +194,9 @@
                    #:guarantee (assert (&& (implies sound (f input-lst cond-lst))
                                            (f-old input-w cond-w)
                                            (not (f input-w cond-w))
+                                           (apply && (for/list ([dnf dnf-exprs]
+                                                                [bound initial-complexity])
+                                                       (<= (total-variables dnf) bound)))
                                            bounds
                                            ))))
     
@@ -202,6 +207,13 @@
       (display ": ")
       (print (dnf-s-expr dnf m))
       (newline))
+    
+    (display "Initial complexity: ")
+    (displayln (apply + (map (lambda (x) (evaluate (total-variables x) m)) dnf-exprs)))
+    
+    (define final-complexity (apply + (map (lambda (x) (evaluate (total-variables x) (simplify x m))) dnf-exprs)))
+    (display "Final complexity: ")
+    (displayln final-complexity)
     
     (define (f-new inputs conditions)
       (evaluate (f inputs conditions) m))
@@ -214,6 +226,7 @@
     
     (display "Computing precision...")
     (displayln (precision precise approx))
+    (newline)
     
     (define concrete-input-w (map (lambda (x) (evaluate x m)) input-w))
     (define concrete-cond-w (map (lambda (x) (evaluate x m)) cond-w))

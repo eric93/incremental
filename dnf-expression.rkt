@@ -125,14 +125,14 @@
                                                           (f variables)))))))
     (if (eq? m1 #f)
         (begin
-          (display "final-complexity: ")
-          (displayln (evaluate (total-variables dnf-expr) cur))
+          ;(display "final-complexity: ")
+          ;(displayln (evaluate (total-variables dnf-expr) cur))
           cur)
         (begin
           (define complexity (evaluate (total-variables dnf-expr) m1))
-          (display "complexity: ")
-          (displayln complexity)
-          (displayln (dnf-s-expr dnf-expr m1))
+          ;(display "complexity: ")
+          ;(displayln complexity)
+          ;(displayln (dnf-s-expr dnf-expr m1))
           
           (do-simplify m1 complexity))))
   
