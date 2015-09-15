@@ -81,8 +81,8 @@
                                (let ([old-out (car (car output))]
                                      [new-out (cdr (car output))]
                                      [out-func (cdr output)])
-                                 (&& (= old-out (apply out-func (append old-inputs cond-lst)))
-                                     (= new-out (apply out-func (append new-inputs cond-lst)))))))
+                                 (&& (= old-out (apply out-func (append old-inputs cond-lst (map (lambda (x) (car (car x))) outputs))))
+                                     (= new-out (apply out-func (append new-inputs cond-lst (map (lambda (x) (cdr (car x))) outputs))))))))
   (apply && output-constraints))
                                      
 
@@ -160,7 +160,7 @@
             
       
   (define dnf-exprs (for/list ([input input-lst])
-                      (dnf-expression cond-lst 8)))
+                      (dnf-expression cond-lst 9)))
   
   (define (f inputs conditions)
     (apply || (for/list ([dnf dnf-exprs]
@@ -188,7 +188,7 @@
     (define input-w (car witness))
     (define cond-w (cdr witness))
    
-    
+    (displayln "Synthesizing...")
     (define m (synthesize 
                    #:forall (append cond-lst input-lst)
                    #:guarantee (assert (&& (implies sound (f input-lst cond-lst))
@@ -211,9 +211,19 @@
     (display "Initial complexity: ")
     (displayln (apply + (map (lambda (x) (evaluate (total-variables x) m)) dnf-exprs)))
     
-    (define final-complexity (apply + (map (lambda (x) (evaluate (total-variables x) (simplify x m))) dnf-exprs)))
+    (define final-func (map (lambda (x) (simplify x m)) dnf-exprs))
+    (displayln "Final function:")
+    (for/list ([input input-lst]
+               [model final-func]
+               [dnf dnf-exprs])
+      (display input)
+      (display ": ")
+      (print (dnf-s-expr dnf model))
+      (newline))
     (display "Final complexity: ")
-    (displayln final-complexity)
+    (displayln (apply + (for/list ([model final-func]
+                                   [dnf dnf-exprs])
+                                   (evaluate (total-variables dnf) model))))
     
     (define (f-new inputs conditions)
       (evaluate (f inputs conditions) m))

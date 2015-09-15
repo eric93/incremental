@@ -130,9 +130,9 @@
           cur)
         (begin
           (define complexity (evaluate (total-variables dnf-expr) m1))
-          ;(display "complexity: ")
-          ;(displayln complexity)
-          ;(displayln (dnf-s-expr dnf-expr m1))
+          (display "complexity: ")
+          (displayln complexity)
+          (displayln (dnf-s-expr dnf-expr m1))
           
           (do-simplify m1 complexity))))
   

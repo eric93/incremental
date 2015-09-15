@@ -30,7 +30,11 @@
                  mt-auto 
                  mb-auto 
                  top-auto 
-                 bottom-auto)
+                 bottom-auto
+                 rel-x
+                 inner-width
+                 rel-y
+                 inner-height)
           (if (not (|| width-auto left-auto right-auto))
               (if (&& ml-auto mr-auto) (+ left (/ (- container-width (+ left right width )) 2) )
                   (+ left (if ml-auto 0 ml)))
@@ -67,7 +71,11 @@
                         mt-auto 
                         mb-auto 
                         top-auto 
-                        bottom-auto)
+                        bottom-auto
+                        rel-x
+                        inner-width
+                        rel-y
+                        inner-height)
                  (if (not width-auto)
                      width
                      (if (|| left-auto right-auto)
@@ -98,7 +106,11 @@
                   mt-auto 
                   mb-auto 
                   top-auto 
-                  bottom-auto)
+                  bottom-auto
+                  rel-x
+                  inner-width
+                  rel-y
+                  inner-height)
            (if (|| top-auto bottom-auto height-auto)
                (if top-auto
                    (if bottom-auto
@@ -137,7 +149,11 @@
                          mt-auto 
                          mb-auto 
                          top-auto 
-                         bottom-auto)
+                         bottom-auto
+                         rel-x
+                         inner-width
+                         rel-y
+                         inner-height)
            (if height-auto
                (if (|| top-auto bottom-auto)
                    intrins-height
