@@ -46,8 +46,8 @@ void run_traversals(Tree* root, const Traversal t[], unsigned int num_t) {
                 if (n->parent == NULL) {
                     new_queue.push(n);
                 } else {
-                    n->parent->num_children -= 1;
-                    if (n->parent->num_children == 0)
+                    n->parent->children_visited -= 1;
+                    if (n->parent->children_visited == 0)
                         work_queue.push(n->parent);
                 }
             }
@@ -64,21 +64,21 @@ Tree* generate_tree() {
 
     root->attributes = new_blockflow_attrs(new BlockFlow(
                 *(new BaseFlow(0)), 
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 true,
-                new_input_length(FIXED, init_val),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val)));
+                rand_inp_length()));
 
     Tree** root_c = new Tree*[2];
     root_c[0] = new Tree(NULL,1,root,2);
@@ -86,40 +86,40 @@ Tree* generate_tree() {
 
     root_c[0]->attributes = new_blockflow_attrs(new BlockFlow(
                 *(new BaseFlow(0)), 
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 false,
-                new_input_length(FIXED, init_val),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val)));
+                rand_inp_length()));
 
     root_c[1]->attributes = new_blockflow_attrs(new BlockFlow(
                 *(new BaseFlow(0)), 
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 false,
-                new_input_length(FIXED, init_val),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val)));
-
+                rand_inp_length()));
+                
     root->children = root_c[0];
 
     Tree* leaf1 = new Tree(NULL,0,root_c[0],4); 
@@ -127,39 +127,39 @@ Tree* generate_tree() {
 
     leaf1->attributes = new_blockflow_attrs(new BlockFlow(
                 *(new BaseFlow(0)), 
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length_auto(),
+                rand_inp_length_auto(),
                 false,
-                new_input_length(FIXED, init_val),
+                rand_inp_length_auto(),
                 0,
                 0,
-                new_input_length(FIXED, init_val)));
+                rand_inp_length()));
 
     leaf2->attributes = new_blockflow_attrs(new BlockFlow(
                 *(new BaseFlow(0)), 
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length(),
                 0,
                 0,
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length(),
+                rand_inp_length(),
                 false,
-                new_input_length(FIXED, init_val),
+                rand_inp_length(),
                 0,
                 0,
-                new_input_length(FIXED, init_val)));
+                rand_inp_length()));
 
 
     root_c[0]->children = leaf1;

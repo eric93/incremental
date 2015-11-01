@@ -26,13 +26,36 @@ struct InputLength {
 };
 
 InputLength new_input_length(InputType,InputValue);
+InputLength rand_inp_length_auto();
+InputLength rand_inp_length();
 bool is_auto (InputLength l);
 int spec_or_zero (InputLength l, int available_width);
 int specified (InputLength l, int available_width);
 const char* to_string(InputLength);
 
+enum DisplayType {
+    BACKGROUND,
+    BORDER,
+    TEXT
+};
+
+struct DisplayItem {
+    DisplayType t;
+    int x;
+    int y;
+    int w;
+    int h;
+
+    int bt;
+    int bb;
+    int bl;
+    int br;
+    DisplayItem *next;
+};
+
 struct DisplayList {
-    int* list;
+    unsigned int len;
+    DisplayItem *first;
 };
 
 DisplayList new_display_list();
