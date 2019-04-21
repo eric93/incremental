@@ -1,5 +1,8 @@
 # Incremental attribute grammar evlauation
 
+Main idea: translate the attribute grammar to its incremental variant. There
+are several ways to do this.
+
 ## Tracking dynamic changes
 
 This is what Reps et al. do in their dynamic interpreter for AGs. However, to
