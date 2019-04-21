@@ -183,3 +183,15 @@ class Leaf : Node {
   }
 }
 ```
+
+For any given computation in the orignal tree, there are multiple ways to
+compute the dirty bit to varying levels of precision. We will also likely want
+to trade off computing dirty bits with dynamic change tracking.
+
+## Research Challenges
+
+* How do we formalize incremental attribute grammars in such a way that incorporates dirty bits and dynamic change tracking?
+  * Previous write-up was an attempt at this, but will likely need to be revised
+* How do we implementa an efficient compiler for incremental attribute grammars?
+  * Need to take advantage or parallelism.
+  * Need to avoid recomputation and copying memory as much as possible.
