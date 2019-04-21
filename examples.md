@@ -195,6 +195,6 @@ to trade off computing dirty bits with dynamic change tracking.
 
 * How do we formalize incremental attribute grammars in such a way that incorporates dirty bits and dynamic change tracking?
   * Previous write-up was an attempt at this, but will likely need to be revised
-* How do we implementa an efficient compiler for incremental attribute grammars?
+* How do we implement an efficient compiler for incremental attribute grammars?
   * Need to take advantage or parallelism.
   * Need to avoid recomputation and copying memory as much as possible.
