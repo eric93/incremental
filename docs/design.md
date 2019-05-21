@@ -30,12 +30,12 @@
       * Objection 1.2: What if I want to schedule dirty-bit computation at a different point than attribute computation?
         * Response: This is suboptimal under a basic cost model. If we
         assume that every attribute function (including dirty-bit attributes)
-        has an intrinsic time to compute, and each traversal has some intrinsuc
+        has an intrinsic time to compute, and each traversal has some intrinsic
         overhead, it makes sense to schedule dirty bits as close as possible to
         the attributes they are associated with. Developers currently write
         traversals that entirely focus on dirty bit computation for conceptual
-        and code readability reasons. Our tool makes these considerations
-        unnecessary. **TODO: clean up**
+        and code-readability reasons. Our tool makes these considerations
+        unnecessary. **TODO: make precise**
     * Objection 2: What about low-level implementation concerns (e.g. data structures used, data layout, simplifying functions, etc.)?
       * Response 1: Developers can somewhat control this with the types they give to attributes and the attribute value functions they reference in the grammar.
       * Response 2: For other concerns, there is a best answer and our implementation chooses that one **TODO: be specific about concerns and make sure this is true**
