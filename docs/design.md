@@ -36,6 +36,6 @@
         traversals that entirely focus on dirty bit computation for conceptual
         and code-readability reasons. Our tool makes these considerations
         unnecessary. **TODO: make precise**
-    * Objection 2: What about low-level implementation concerns (e.g. data structures used, data layout, simplifying functions, etc.)?
+    * Objection 2: What about low-level implementation concerns (e.g. data structures used, data layout, simplifying constraints, etc.)?
       * Response 1: Developers can somewhat control this with the types they give to attributes and the attribute value functions they reference in the grammar.
       * Response 2: For other concerns, there is a best answer and our implementation chooses that one **TODO: be specific about concerns and make sure this is true**
