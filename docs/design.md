@@ -19,7 +19,7 @@
       * How do we ensure we don't introduce unnecessary overhead (**TODO: be more specific**)?
 * Evaluation
   * Research Question: Do we capture the entire space of layout engines developers want to write?
-    * **TODO Answer.** Possible Answers:
+    * **TODO: Answer.** Possible Answers:
       * Show a bunch of case studies covering a wide range of layout features **TODO: find case studies; this sounds hard**
       * Our tool is sophisticated enough to handle features that cause bugs in existing browsers **TODO: we have some Servo bugs, but we would probably want Webkit, Gecko, and Blink! bugs as well**
       * Some kind of user study or study of popular dynamic web pages?
@@ -28,7 +28,7 @@
       * Objection 1.1: Dirty-bit aggregation is strongly schedule-dependent
         * Response: We have modified our scheduler to account for this
       * Objection 1.2: What if I want to schedule dirty-bit computation at a different point than attribute computation?
-        * Response: This is suboptimal under a very basic cost model. If we
+        * Response: This is suboptimal under a basic cost model. If we
         assume that every attribute function (including dirty-bit attributes)
         has an intrinsic time to compute, and each traversal has some intrinsuc
         overhead, it makes sense to schedule dirty bits as close as possible to
