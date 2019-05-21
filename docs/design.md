@@ -10,7 +10,7 @@
       * Dirty-bit Aggregation (only adjacent attributes allowed to aggregate; strongly depends on schedule)
       * Whether to dynamically check for change or not.
       * If not, what function to compute the dirty bit with (precision/complexity tradeoff)
-    * **TODO** Theorem: any set of choices produces a sound incremental schedule
+    * **TODO Theorem: any set of choices produces a sound incremental schedule**
   * Phase 2: Code generation
     * Goal: generate efficient code for incremental updates
     * Open Questions (i.e. these are all **TODO**)
@@ -20,7 +20,7 @@
 * Evaluation
   * Research Question: Do we capture the entire space of layout engines developers want to write?
     * **TODO Answer.** Possible Answers:
-      * Show a bunch of case studies covering a wide range of layout features **TODO: find case studies**
+      * Show a bunch of case studies covering a wide range of layout features **TODO: find case studies; this sounds hard**
       * Our tool is sophisticated enough to handle features that cause bugs in existing browsers **TODO: we have some Servo bugs, but we would probably want Webkit, Gecko, and Blink! bugs as well**
       * Some kind of user study or study of popular dynamic web pages?
   * Threats to validity
